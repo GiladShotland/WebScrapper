@@ -1,26 +1,29 @@
 import json
 import torch
-from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
-MODEL_TYPE = "t5-small"
-PROCESSING_UNIT = 'cpu'
+from transformers import pipeline
+from ProjectUtils.Consts import *
 
 
 class Summarizer:
     def __init__(self):
-        self.model = T5ForConditionalGeneration.from_pretrained(MODEL_TYPE)
-        self.model = T5Tokenizer.from_pretrained(MODEL_TYPE)
-        self.device = torch.device(PROCESSING_UNIT)
+        self.generator = pipeline("text2text-generation")
 
-    def get_summay(self,txt):
-        to_summary = "summarize: "+txt
-        tokenized_text = self.tokenizer.encode(to_summary, return_tensors="pt").to(PROCESSING_UNIT)
+    def get_summary(self, txt):
+        """
+        splitting the text for windows.
+        summarizing each window and adding the summaries all together
+        :param txt:
+        :return: summaries
+        """
+        num_windows = int(len(txt) / LENGTH_OF_WINDOW_FOR_SUMMARIZATION)
+        summary_length_for_window = int(LENGTH_OF_SUMMARY / num_windows)
+        ans = ""
+        for i in range(num_windows - 1):
 
-        summary_ids = self.model.generate(tokenized_text,
-                                     num_beams=4,
-                                     no_repeat_ngram_size=2,
-                                     min_length=30,
-                                     max_length=100,
-                                     early_stopping=True
-                                     )
+            generator_output=  self.generator("summarize: " + txt[i * LENGTH_OF_WINDOW_FOR_SUMMARIZATION:(
+                                                                                                         i + 1) * LENGTH_OF_WINDOW_FOR_SUMMARIZATION],
+                                  max_length=summary_length_for_window)
+            output_dict = generator_output[0]
+            ans += output_dict['generated_text']
 
-        output=self.tokenizer.decode(summary_ids[0],skip_special_tokens=True)
+        return ans
