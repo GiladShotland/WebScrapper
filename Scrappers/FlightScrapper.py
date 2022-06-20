@@ -139,8 +139,3 @@ class FlightScrapper(Scrapper):
                     ans.append((key, flight[key]))
 
 
-if __name__ == '__main__':
-    fs = FlightScrapper()
-    print(fs.search("DL 9559"))
-
-
